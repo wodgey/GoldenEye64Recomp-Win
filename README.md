@@ -1,21 +1,52 @@
-My own stab at building this linux/MacOS vers of 007 but for windows.
-This was because i had the urge to play Goldeneye with 4k texture-packs that emulators have been able to use.
-The first few working/playable 007 i tried were sdl2 and i knew that rt64 based rendering might be easier for me to use. 
-Game runs and there are some quality of life tweaks that are implemented.
-modern controllers work with move/strafe on the same stick. and pitch/yaw on the other stick (look up/down & turn left/right)
+# GoldenEye64Recomp-Win
 
-With almost zero coding experience and understanding, I put claude to work and I now have a game that I can import rtz texture packs. The dual-stick patch presents my Xbox/DualSense controller to the game as 2 N64 controllers, with one joystick and shoulder button sent as N64port0's stick and z-button, with the other being presented as N64port1's. This allows the in-game-pause-ui controls tab to use the 2.x controller schemes (whilst preserving the original games ambivalence to left/right-handed players)
-it's a little bit hacky but it works, and the aiming cursor works just from one stick (rather than l-joy for up/down and R-joy for Left/Right)
+A Windows-focused fork of [GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp), with native Windows builds, RT64 rendering, high-resolution texture-pack support, and some quality-of-life improvements.
 
-D3D12/Vulkan rendering works, with a radial selector in settings for choosing.
-There's also a FPS counter for PC-side and Game-side.
+## About this fork
 
-The development was in wsl because i prefer it. But the actual cmake/build was done in powershell. I can;t remember why. Unsure if there was an error when building in wsl.  
+This is my attempt at getting the macOS/Linux-oriented GoldenEye recompilation project running as a native Windows PC game.
 
-the upstream repos insisted on converting ROM to be tlbfree_nocompression and also demanded ge007.tlbfree.elf which which in turn needed recreating (well, claude did it, but it worked)
+The motivation was simple: I wanted to play GoldenEye 007 with 4K high-resolution texture packs, similar to what has been possible with emulators. The first playable PC projects I tried used SDL2 rendering, but I knew that an RT64-based renderer would give me a better route towards the texture-pack support I wanted.
 
-It is unlikely that i will keep on maintaining this as it's already at a state I am happy with. Unless of course there is significant progress made upstream. I will however endeavour to document/explain the steps needed to overcome niggles and difficulties in getting this game to compile and run. 
+With very little coding experience, and a lot of help from Claude, I gradually worked through the build problems and got the game running in a state I'm happy with.
 
+It has been quite a journey, involving plenty of missteps, workarounds and debugging along the way. Hopefully, documenting what I learned will save someone else some of the trouble.
+
+## Features and improvements
+
+- **Native Windows build** — developed using WSL for much of the source-code work, with the actual CMake configuration and compilation performed in Windows PowerShell.
+- **RT64 rendering** — supports Direct3D 12 and Vulkan rendering, with a radial selector in the settings for choosing the renderer.
+- **High-resolution texture packs** — supports importing RTZ texture packs, which was one of my main reasons for undertaking this project.
+- **Dual-stick controller support** (at the expense of local multiplayer)  — a workaround that allows modern Xbox and DualSense controllers to use familiar twin-stick controls.
+- **Classic GoldenEye control schemes** — the dual-stick patch presents the controller to the game as two N64 controller inputs. One stick and its associated shoulder-button input are sent through port 0, while the other stick is sent through port 1. This allows the in-game Controls menu to use the original 2.x control schemes.
+- **Improved aiming controls** — aiming and looking around use a more conventional modern twin-stick arrangement, rather than splitting vertical and horizontal aiming across different sticks.
+- **FPS counters** — counters for both PC-side rendering performance and the game's own frame rate.
+
+The dual-stick implementation is admittedly a little hacky, but it works. It is a squazzillion times better than my first attempt which edited the controls.json. It takes advantage of the original game's support for multiple controllers while preserving its existing control-scheme options and their left- and right-handed arrangements. Through the game's built-in Controls menu, you can also swap which shoulder button is used for AIM or FIRE, and which joystick controls MOVE or LOOK.
+
+## Building on Windows
+
+Development was largely carried out in WSL because that's the environment I prefer working in. However, the actual CMake configuration and compilation were performed natively in Windows using PowerShell and the Windows development toolchain.
+
+I'll endeavour to document the steps needed to reproduce the build, including the problems and workarounds I encountered. Some of these may be specific to this fork or to the versions of its dependencies used during development.
+
+The upstream build process also required a TLBFREE version of the game ROM and a corresponding `ge007.tlbfree.elf` file. Getting the correct inputs for the recompilation process was one of the more involved parts of the project.
+
+Please consult the upstream project's documentation and the build instructions in this repository for the required tools, configuration and input files.
+
+## Status and maintenance
+
+This project has reached a state where I'm happy with it for my own use. I don't currently intend to maintain it actively, unless significant progress upstream gives me a reason to revisit it.
+
+I will, however, endeavour to document the steps and workarounds that made it possible to build and run on Windows. If you're trying to get the project running yourself, hopefully those notes will be useful.
+
+## Credits
+
+This project stands on the shoulders of giants. It would not exist without the original GoldenEye64Recomp project and the wider work behind GoldenRecomp, N64Recomp, RT64 and the GoldenEye decompilation community.
+
+Claude also played a substantial role in helping me investigate build failures, work through code changes and develop the Windows-specific modifications.
+
+All credit for the original work belongs to its respective authors. This fork aims to build on that work and share the improvements and discoveries made along the way.
 
 
 
