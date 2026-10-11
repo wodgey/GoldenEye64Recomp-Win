@@ -4,14 +4,18 @@ The first few working/playable 007 i tried were sdl2 and i knew that rt64 based 
 Game runs and there are some quality of life tweaks that are implemented.
 modern controllers work with move/strafe on the same stick. and pitch/yaw on the other stick (look up/down & turn left/right)
 
-
-With almost zero coding experience and understanding, I put claude to work and I now have a game that I can import rtz texture packs. The dual-stick patch presents my gamepad to the game as 2 N64 controllers with one joystick and shoulder button sent as N64port0's stick and z-button, with the other being presented as N64port1's. This allows the in-game-pause-ui controls tab to use the 2.x controller schemes. 
-it's a litttle bit hacky but it works, and the aiming cursor works just from one stick (rather than l-joy for up/down and R-joy for Left/Right)
+With almost zero coding experience and understanding, I put claude to work and I now have a game that I can import rtz texture packs. The dual-stick patch presents my Xbox/DualSense controller to the game as 2 N64 controllers, with one joystick and shoulder button sent as N64port0's stick and z-button, with the other being presented as N64port1's. This allows the in-game-pause-ui controls tab to use the 2.x controller schemes (whilst preserving the original games ambivalence to left/right-handed players)
+it's a little bit hacky but it works, and the aiming cursor works just from one stick (rather than l-joy for up/down and R-joy for Left/Right)
 
 D3D12/Vulkan rendering works, with a radial selector in settings for choosing.
 There's also a FPS counter for PC-side and Game-side.
 
-The developement was in wsl because i prefer it. But the actual cmake/build was done in powershell. I can;t remember why. Unsure if there was an error when building in wsl.  
+The development was in wsl because i prefer it. But the actual cmake/build was done in powershell. I can;t remember why. Unsure if there was an error when building in wsl.  
+
+the upstream repos insisted on converting ROM to be tlbfree_nocompression and also demanded ge007.tlbfree.elf which which in turn needed recreating (well, claude did it, but it worked)
+
+It is unlikely that i will keep on maintaining this as it's already at a state I am happy with. Unless of course there is significant progress made upstream. I will however endeavour to document/explain the steps needed to overcome niggles and difficulties in getting this game to compile and run. 
+
 
 
 
