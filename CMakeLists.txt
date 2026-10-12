@@ -131,11 +131,232 @@ if(NOT DEFINED PATCHES_OBJCOPY)
     set(PATCHES_OBJCOPY llvm-objcopy)
 endif()
 
-add_custom_target(PatchesBin
-    COMMAND ${CMAKE_COMMAND} -E env CC=${PATCHES_C_COMPILER} LD=${PATCHES_LD} OBJCOPY=${PATCHES_OBJCOPY} make
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/patches
-    BYPRODUCTS ${CMAKE_SOURCE_DIR}/patches/patches.elf
+set(PATCHES_DIR ${CMAKE_SOURCE_DIR}/patches)
+
+set(PATCHES_SOURCES
+    ${PATCHES_DIR}/audio.c
+    ${PATCHES_DIR}/boot.c
+    ${PATCHES_DIR}/fps.c
+    ${PATCHES_DIR}/interpolation.c
+    ${PATCHES_DIR}/lib.c
+    ${PATCHES_DIR}/print.c
+    ${PATCHES_DIR}/skybox.c
+    ${PATCHES_DIR}/widescreen.c
+    ${PATCHES_DIR}/workbench_theboy.c
 )
+
+set(PATCHES_OBJECTS
+    ${PATCHES_DIR}/audio.o
+    ${PATCHES_DIR}/boot.o
+    ${PATCHES_DIR}/fps.o
+    ${PATCHES_DIR}/interpolation.o
+    ${PATCHES_DIR}/lib.o
+    ${PATCHES_DIR}/print.o
+    ${PATCHES_DIR}/skybox.o
+    ${PATCHES_DIR}/widescreen.o
+    ${PATCHES_DIR}/workbench_theboy.o
+)
+
+add_custom_command(
+    OUTPUT ${PATCHES_DIR}/patches.elf
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter
+        -Wno-unknown-pragmas
+        -Wno-unused-variable
+        -Wno-unused-but-set-variable
+        -Wno-missing-braces
+        -Wno-unsupported-floating-point-opt
+        -Wno-switch
+        -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/audio.c
+        -c -o ${PATCHES_DIR}/audio.o
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter -Wno-unknown-pragmas
+        -Wno-unused-variable -Wno-unused-but-set-variable
+        -Wno-missing-braces -Wno-unsupported-floating-point-opt
+        -Wno-switch -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/boot.c
+        -c -o ${PATCHES_DIR}/boot.o
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter -Wno-unknown-pragmas
+        -Wno-unused-variable -Wno-unused-but-set-variable
+        -Wno-missing-braces -Wno-unsupported-floating-point-opt
+        -Wno-switch -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/fps.c
+        -c -o ${PATCHES_DIR}/fps.o
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter -Wno-unknown-pragmas
+        -Wno-unused-variable -Wno-unused-but-set-variable
+        -Wno-missing-braces -Wno-unsupported-floating-point-opt
+        -Wno-switch -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/interpolation.c
+        -c -o ${PATCHES_DIR}/interpolation.o
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter -Wno-unknown-pragmas
+        -Wno-unused-variable -Wno-unused-but-set-variable
+        -Wno-missing-braces -Wno-unsupported-floating-point-opt
+        -Wno-switch -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/lib.c
+        -c -o ${PATCHES_DIR}/lib.o
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter -Wno-unknown-pragmas
+        -Wno-unused-variable -Wno-unused-but-set-variable
+        -Wno-missing-braces -Wno-unsupported-floating-point-opt
+        -Wno-switch -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/print.c
+        -c -o ${PATCHES_DIR}/print.o
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter -Wno-unknown-pragmas
+        -Wno-unused-variable -Wno-unused-but-set-variable
+        -Wno-missing-braces -Wno-unsupported-floating-point-opt
+        -Wno-switch -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/skybox.c
+        -c -o ${PATCHES_DIR}/skybox.o
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter -Wno-unknown-pragmas
+        -Wno-unused-variable -Wno-unused-but-set-variable
+        -Wno-missing-braces -Wno-unsupported-floating-point-opt
+        -Wno-switch -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/widescreen.c
+        -c -o ${PATCHES_DIR}/widescreen.o
+    COMMAND ${PATCHES_C_COMPILER}
+        -target mips -mips2 -mabi=32 -O2 -G0
+        -mno-abicalls -mno-odd-spreg -mno-check-zero-division
+        -fomit-frame-pointer -ffast-math
+        -fno-unsafe-math-optimizations -fno-builtin-memset
+        -Wall -Wextra
+        -Wno-incompatible-library-redeclaration
+        -Wno-unused-parameter -Wno-unknown-pragmas
+        -Wno-unused-variable -Wno-unused-but-set-variable
+        -Wno-missing-braces -Wno-unsupported-floating-point-opt
+        -Wno-switch -fno-strict-aliasing
+        -nostdinc
+        -DVERSION_US -DLANG_US -DREFRESH_NTSC -DTARGET_N64
+        -D_LANGUAGE_C -DMIPS -DLEFTOVERDEBUG
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/PR
+        -I${CMAKE_SOURCE_DIR}/lib/ge/include/libc
+        -I${CMAKE_SOURCE_DIR}/lib/rt64/include
+        ${PATCHES_DIR}/workbench_theboy.c
+        -c -o ${PATCHES_DIR}/workbench_theboy.o
+    COMMAND ${PATCHES_LD}
+        ${PATCHES_OBJECTS}
+        -nostdlib
+        -T ${PATCHES_DIR}/patches.ld
+        -T ${PATCHES_DIR}/syms.ld
+        -Map ${PATCHES_DIR}/patches.map
+        --unresolved-symbols=ignore-all
+        --emit-relocs
+        -o ${PATCHES_DIR}/patches.elf
+    DEPENDS ${PATCHES_SOURCES} ${PATCHES_DIR}/patches.ld ${PATCHES_DIR}/syms.ld
+    VERBATIM
+)
+
+add_custom_target(PatchesBin DEPENDS ${PATCHES_DIR}/patches.elf)
 
 # Generate patches_bin.c from patches.bin
 add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches_bin.c
@@ -150,7 +371,7 @@ add_custom_command(OUTPUT
                        ${CMAKE_SOURCE_DIR}/RecompiledPatches/recomp_overlays.inl
                        ${CMAKE_SOURCE_DIR}/RecompiledPatches/funcs.h
                    # TODO: Look into why modifying patches requires two builds to take
-                   COMMAND ./N64Recomp patches.toml
+                   COMMAND ${CMAKE_SOURCE_DIR}/n64recomp-src/out/build/x64-Debug/N64Recomp.exe patches.toml
                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                    DEPENDS ${CMAKE_SOURCE_DIR}/patches/patches.elf
 )
@@ -308,14 +529,16 @@ if (WIN32)
             "${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxcompiler.dll"
             $<TARGET_FILE_DIR:GoldenRecomp>)
 
-    set_target_properties(
-        GoldenRecomp
-        PROPERTIES
-            LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE"
-            LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
-            LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
-            LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
-    )
+    if (MSVC)
+        set_target_properties(
+            GoldenRecomp
+            PROPERTIES
+                LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE"
+                LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
+                LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
+                LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
+        )
+    endif()
 
     target_sources(GoldenRecomp PRIVATE ${CMAKE_SOURCE_DIR}/icons/app.rc)
 endif()
@@ -419,6 +642,7 @@ target_link_libraries(GoldenRecomp PRIVATE
     nfd
     lunasvg
 )
+
 
 # TODO fix the rt64 CMake script so that this doesn't need to be duplicated here
 # For DXC

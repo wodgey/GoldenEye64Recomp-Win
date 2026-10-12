@@ -2,6 +2,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#include <chrono>
+#include <cstdio>
 #include <fstream>
 #include <filesystem>
 #ifdef _WIN32
@@ -550,7 +552,7 @@ public:
             // Otherwise pad each row as necessary.
             else {
                 const Rml::byte *src_data = flip_y ? source + row_pitch * (source_dimensions.y - 1) : source;
-                uint32_t src_stride = flip_y ? -row_pitch : row_pitch;
+                std::ptrdiff_t src_stride = flip_y ? -static_cast<std::ptrdiff_t>(row_pitch) : static_cast<std::ptrdiff_t>(row_pitch);
                 size_t offset = 0;
 
                 for (int row = 0; row < source_dimensions.y; row++) { //(offset + increment) <= image_size_bytes) {
@@ -567,7 +569,7 @@ public:
             // Copy the upload buffer into the texture.
             list_->copyTextureRegion(
                 RT64::RenderTextureCopyLocation::Subresource(texture.get()),
-                RT64::RenderTextureCopyLocation::PlacedFootprint(upload_buffer_.get(), RmlTextureFormat, source_dimensions.x, source_dimensions.y, 1, row_width, upload_buffer_offset));
+                RT64::RenderTextureCopyLocation::PlacedFootprint(upload_buffer_.get(), bgra ? RmlTextureFormatBgra : RmlTextureFormat, source_dimensions.x, source_dimensions.y, 1, row_width, upload_buffer_offset));
             
             // Prepare the texture for being read from a pixel shader.
             list_->barriers(RT64::RenderBarrierStage::GRAPHICS, RT64::RenderTextureBarrier(texture.get(), RT64::RenderTextureLayout::SHADER_READ));
@@ -1023,8 +1025,15 @@ struct UIContext {
                 }
             }
 
-            if (!firstFocus) return;
-            Rml::String id = firstFocus->GetId();
+            Rml::String id = firstFocus ? firstFocus->GetId() : Rml::String();
+            {
+                // Mods tab: rows get their ids from a data-for list, so point Down at the first row (or Rescan if the list is empty).
+                Rml::ElementList tabs_for_id;
+                current_document->GetElementsByTagName(tabs_for_id, "tab");
+                if (curTab >= 0 && curTab < (int)tabs_for_id.size() && tabs_for_id[curTab]->GetId() == "tab_mods") {
+                    id = current_document->GetElementById("mod_row_0") ? "mod_row_0" : "mods_refresh_button";
+                }
+            }
             if (id.empty()) return;
 
             Rml::ElementList tabs;
@@ -1222,6 +1231,10 @@ int cont_button_to_key(SDL_ControllerButtonEvent& button) {
     }
 
     switch (button.button) {
+        case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+            return SDLK_PAGEUP;
+        case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+            return SDLK_PAGEDOWN;
         case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_UP:
             return SDLK_UP;
         case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_DOWN:
@@ -1275,6 +1288,42 @@ void recompui::set_cont_active(bool active) {
 void recompui::activate_mouse() {
     ui_context->rml.update_primary_input(true, false);
     ui_context->rml.update_focus(true, false);
+}
+
+namespace RT64 { uint64_t presentedFrameCount(); }
+uint64_t zelda_game_frame_count();
+const char* zelda_renderer_backend_name();
+
+
+static void draw_fps_overlay(int width, int height) {
+    static Rml::Context* ctx = nullptr;
+    static Rml::Element* text_el = nullptr;
+    static auto last_time = std::chrono::steady_clock::now();
+    static uint64_t last_presented = RT64::presentedFrameCount();
+    static uint64_t last_game = zelda_game_frame_count();
+    if (ctx == nullptr) {
+        ctx = Rml::CreateContext("fps_overlay", Rml::Vector2i(width, height));
+        if (ctx == nullptr) return;
+        Rml::ElementDocument* doc = ctx->LoadDocument("assets/fps_overlay.rml");
+        if (doc != nullptr) {
+            doc->Show(Rml::ModalFlag::None, Rml::FocusFlag::None);
+            text_el = doc->GetElementById("fps_text");
+        }
+    }
+    ctx->SetDensityIndependentPixelRatio(height / 1080.0f);
+    ctx->SetDimensions(Rml::Vector2i(width, height));
+    const auto now = std::chrono::steady_clock::now();
+    const double seconds = std::chrono::duration<double>(now - last_time).count();
+    if (seconds >= 0.5 && text_el != nullptr) {
+        const uint64_t presented = RT64::presentedFrameCount();
+        const uint64_t game = zelda_game_frame_count();
+        char text[64];
+        std::snprintf(text, sizeof(text), "%s %.0f | Game %.0f", zelda_renderer_backend_name(), (presented - last_presented) / seconds, (game - last_game) / seconds);
+        text_el->SetInnerRML(text);
+        last_time = now; last_presented = presented; last_game = game;
+    }
+    ctx->Update();
+    ctx->Render();
 }
 
 void draw_hook(RT64::RenderCommandList* command_list, RT64::RenderFramebuffer* swap_chain_framebuffer) {
@@ -1456,26 +1505,28 @@ void draw_hook(RT64::RenderCommandList* command_list, RT64::RenderFramebuffer* s
     ui_context->rml.update_primary_input(mouse_moved, non_mouse_interacted);
     ui_context->rml.update_focus(mouse_moved, non_mouse_interacted);
 
-    if (cur_menu != recompui::Menu::None) {
+    { static bool f9_prev = false; const Uint8* ks = SDL_GetKeyboardState(nullptr); const bool f9 = ks != nullptr && ks[SDL_SCANCODE_F9]; if (f9 && !f9_prev) zelda64::set_show_fps_mode(zelda64::get_show_fps_mode() == zelda64::ShowFpsMode::On ? zelda64::ShowFpsMode::Off : zelda64::ShowFpsMode::On); f9_prev = f9; }
+    const bool fps_on = zelda64::get_show_fps_mode() == zelda64::ShowFpsMode::On && ultramodern::is_game_started();
+    if (cur_menu != recompui::Menu::None || fps_on) {
         int width = swap_chain_framebuffer->getWidth();
         int height = swap_chain_framebuffer->getHeight();
-
-        // Scale the UI based on the window size with 1080 vertical resolution as the reference point.
-        ui_context->rml.context->SetDensityIndependentPixelRatio((height) / 1080.0f);
-
         ui_context->rml.render_interface->start(command_list, width, height);
-
-        static int prev_width = 0;
-        static int prev_height = 0;
-
-        if (prev_width != width || prev_height != height) {
-            ui_context->rml.context->SetDimensions({ width, height });
+        if (cur_menu != recompui::Menu::None) {
+            // Scale the UI based on the window size with 1080 vertical resolution as the reference point.
+            ui_context->rml.context->SetDensityIndependentPixelRatio((height) / 1080.0f);
+            static int prev_width = 0;
+            static int prev_height = 0;
+            if (prev_width != width || prev_height != height) {
+                ui_context->rml.context->SetDimensions({ width, height });
+            }
+            prev_width = width;
+            prev_height = height;
+            ui_context->rml.context->Update();
+            ui_context->rml.context->Render();
         }
-        prev_width = width;
-        prev_height = height;
-
-        ui_context->rml.context->Update();
-        ui_context->rml.context->Render();
+        if (fps_on) {
+            draw_fps_overlay(width, height);
+        }
         ui_context->rml.render_interface->end(command_list, swap_chain_framebuffer);
     }
 }

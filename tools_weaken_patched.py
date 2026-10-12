@@ -9,12 +9,29 @@ import re, glob, sys, os
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# Collect RECOMP_PATCH'd function names from the patch sources.
+# Collect patch function names from the GENERATED patch source.
+# Only functions actually emitted by N64Recomp should cause their
+# corresponding original functions to be weak.  A RECOMP_PATCH inside
+# #if 0 (or otherwise not emitted) must not weaken the original.
 names = set()
-for path in glob.glob("patches/*.c"):
-    src = open(path).read()
-    for m in re.finditer(r"RECOMP_PATCH\s+[A-Za-z0-9_*\s]+?([A-Za-z_][A-Za-z0-9_]*)\s*\(", src):
-        names.add(m.group(1))
+
+patches_c = "RecompiledPatches/patches.c"
+if not os.path.exists(patches_c):
+    raise SystemExit(
+        "RecompiledPatches/patches.c not found; run N64Recomp first"
+    )
+
+src = open(patches_c).read()
+
+for m in re.finditer(
+    r"^RECOMP_FUNC\s+(?:[A-Za-z_][A-Za-z0-9_*\s]*?)"
+    r"([A-Za-z_][A-Za-z0-9_]*)\s*\(",
+    src,
+    re.M,
+):
+    names.add(m.group(1))
+
+print(f"found {len(names)} emitted patch functions")
 
 names.add("strtol_recomp")  # helper duplicated by patches
 

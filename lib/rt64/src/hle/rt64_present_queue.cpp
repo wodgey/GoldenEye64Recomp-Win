@@ -2,6 +2,7 @@
 // RT64
 //
 
+#include <atomic>
 #include "rt64_present_queue.h"
 
 #include "common/rt64_thread.h"
@@ -10,6 +11,9 @@
 #include "rt64_workload_queue.h"
 
 namespace RT64 {
+    static std::atomic<uint64_t> presentedFrames{0};
+    uint64_t presentedFrameCount() { return presentedFrames.load(std::memory_order_relaxed); }
+
     // PresentQueue
 
     PresentQueue::PresentQueue() {
@@ -407,6 +411,7 @@ namespace RT64 {
 
                 RenderCommandSemaphore *waitSemaphore = drawSemaphore.get();
                 swapChainValid = ext.swapChain->present(swapChainIndex, &waitSemaphore, 1);
+                presentedFrames.fetch_add(1, std::memory_order_relaxed);
                 presentProfiler.logAndRestart();
                 presentTimestamp = Timer::current();
             }

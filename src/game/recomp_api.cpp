@@ -1,3 +1,5 @@
+#include <atomic>
+#include <chrono>
 #include <cmath>
 
 #include "recomp.h"
@@ -240,4 +242,22 @@ extern "C" void recomp_set_right_analog_suppressed(uint8_t* rdram, recomp_contex
     s32 suppressed = _arg<0, s32>(rdram, ctx);
 
     recomp::set_right_analog_suppressed(suppressed);
+}
+
+static std::atomic<int64_t> g_dual_stick_last_tick_ms{ -100000 };
+
+static std::atomic<int> g_dual_stick_style{ -1 };
+
+extern "C" void recomp_dual_stick_gameplay_tick(uint8_t* rdram, recomp_context* ctx) {
+    g_dual_stick_style.store(_arg<0, int32_t>(rdram, ctx));
+    g_dual_stick_last_tick_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+
+int recomp_dual_stick_control_style() {
+    return g_dual_stick_style.load();
+}
+
+bool recomp_dual_stick_gameplay_recent() {
+    const int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    return (now - g_dual_stick_last_tick_ms.load()) < 150;
 }

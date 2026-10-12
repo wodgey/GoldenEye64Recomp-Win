@@ -1,0 +1,34 @@
+<template name="config-menu__qol">
+    <head>
+    </head>
+    <body>
+        <form class="config__form" id="conf-qol__form">
+            <div class="config__hz-wrapper" id="conf-qol__hz-wrapper">
+                <div class="config__wrapper" data-event-mouseout="set_cur_config_index(-1)" id="conf-qol__wrapper">
+                    <div class="config-option" data-event-mouseover="set_cur_config_index(10)">
+                        <label class="config-option__title">Dual-Stick Controller Compatibility (2.x Control Scheme)</label>
+                        <div class="config-option__list">
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(10)" name="dual_controller_compatibility_mode" data-checked="dual_controller_compatibility_mode" value="On" id="dual_controller_compatibility_enabled" />
+                            <label class="config-option__tab-label" for="dual_controller_compatibility_enabled">On</label>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(10)" name="dual_controller_compatibility_mode" data-checked="dual_controller_compatibility_mode" value="Off" id="dual_controller_compatibility_disabled" />
+                            <label class="config-option__tab-label" for="dual_controller_compatibility_disabled">Off</label>
+                        </div>
+                    </div>
+                    <div class="config-option" data-event-mouseover="set_cur_config_index(11)">
+                        <label class="config-option__title">Show FPS Counter</label>
+                        <div class="config-option__list">
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(11)" name="show_fps_counter" data-checked="show_fps_counter" value="On" id="show_fps_enabled" />
+                            <label class="config-option__tab-label" for="show_fps_enabled">On</label>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(11)" name="show_fps_counter" data-checked="show_fps_counter" value="Off" id="show_fps_disabled" />
+                            <label class="config-option__tab-label" for="show_fps_disabled">Off</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="config__wrapper">
+                    <p data-if="cur_config_index == 10">Presents the left and right shoulder buttons and the left and right sticks as controller 1 and controller 2, so a single gamepad can use GoldenEye's 2.x control styles.</p>
+                    <p data-if="cur_config_index == 11">Shows a small counter in the top-right corner: display frames per second (frames RT64 presents, including interpolated ones) and game frames per second (display lists the game submits). F9 toggles it at any time.</p>
+                </div>
+            </div>
+        </form>
+    </body>
+</template>

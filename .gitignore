@@ -89,3 +89,28 @@ patches/patches.bin
 shadercache/
 *.app/
 .DS_Store
+
+# Fork additions: local backups and scratch
+.dual-stick-backup-*/
+*.bak
+*.before-*
+*.orig
+*.rej
+*.log
+
+# Texture packs and dumps (user data, never committed)
+*.rtz
+dumps/
+dumps_unhashable/
+mod_thumbs/
+
+# Fork additions: WSL/MinGW build trees, scratch
+/build-win/
+/build-win-debug/
+*.with-logging
+
+# Local third-party/Windows deps and decomp-sourced RSP asm (see docs)
+/lib/freetype-windows-binaries/
+/lib/rt64/src/contrib/mupen64plus-win32-deps/
+/rsp/rspboot.s
+/rsp/graphics/

@@ -41,6 +41,9 @@ endfunction()
 
 if (WIN32)
     set (DXC "${PROJECT_SOURCE_DIR}/src/contrib/dxc/bin/x64/dxc.exe")
+if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    file(TO_NATIVE_PATH "${DXC}" DXC)
+endif()
     add_compile_definitions(NOMINMAX)
 
     # Dependencies that must be next to the DLL.
@@ -94,7 +97,16 @@ set(ANDROID_PLATFORM android-24)
 set(ANDROID_ABI arm64-v8a)
 
 # For DXC
-set (DXC_COMMON_OPTS "-I${PROJECT_SOURCE_DIR}/src")
+set (DXC_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/src")
+if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    execute_process(
+        COMMAND wslpath -w "${DXC_INCLUDE_DIR}"
+        OUTPUT_VARIABLE DXC_INCLUDE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    string(REPLACE "\\" "/" DXC_INCLUDE_DIR "${DXC_INCLUDE_DIR}")
+endif()
+set (DXC_COMMON_OPTS "-I${DXC_INCLUDE_DIR}")
 set (DXC_DXIL_OPTS "-Wno-ignored-attributes")
 set (DXC_SPV_OPTS "-spirv" "-fspv-target-env=vulkan1.0" "-fvk-use-dx-layout")
 set (DXC_LB_OPTS "${DXC_COMMON_OPTS}" "-D" "LIBRARY" "-T" "lib_6_3")
@@ -105,8 +117,26 @@ set (DXC_GS_OPTS "${DXC_COMMON_OPTS}" "-E" "GSMain" "-T gs_6_3")
 set (DXC_RT_OPTS "${DXC_COMMON_OPTS}" "-D" "RT_SHADER" "-T" "lib_6_3" "-fspv-target-env=vulkan1.1spirv1.4" "-fspv-extension=SPV_KHR_ray_tracing" "-fspv-extension=SPV_EXT_descriptor_indexing")
 
 function(build_shader_spirv_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
+    set(DXC_FILENAME "${FILENAME}")
+    set(DXC_OUTNAME "${OUTNAME}.spv")
+
+    if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+        execute_process(
+            COMMAND wslpath -w "${FILENAME}"
+            OUTPUT_VARIABLE DXC_FILENAME
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        string(REPLACE "\\" "/" DXC_FILENAME "${DXC_FILENAME}")
+        execute_process(
+            COMMAND wslpath -w "${OUTNAME}.spv"
+            OUTPUT_VARIABLE DXC_OUTNAME
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        string(REPLACE "\\" "/" DXC_OUTNAME "${DXC_OUTNAME}")
+    endif()
+
     add_custom_command(OUTPUT ${OUTNAME}.spv
-        COMMAND ${DXC} ${DXC_SPV_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.spv
+        COMMAND ${DXC} ${DXC_SPV_OPTS} ${ARGN} "${DXC_FILENAME}" /Fo "${DXC_OUTNAME}"
         DEPENDS ${FILENAME})
     add_custom_command(OUTPUT ${OUTNAME}.spirv.c
         COMMAND file_to_c ${OUTNAME}.spv ${TARGET_NAME}BlobSPIRV ${OUTNAME}.spirv.c ${OUTNAME}.spirv.h
@@ -116,8 +146,26 @@ function(build_shader_spirv_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
 endfunction()
 
 function(build_shader_dxil_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
+    set(DXC_FILENAME "${FILENAME}")
+    set(DXC_OUTNAME "${OUTNAME}.dxil")
+
+    if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+        execute_process(
+            COMMAND wslpath -w "${FILENAME}"
+            OUTPUT_VARIABLE DXC_FILENAME
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        string(REPLACE "\\" "/" DXC_FILENAME "${DXC_FILENAME}")
+        execute_process(
+            COMMAND wslpath -w "${OUTNAME}.dxil"
+            OUTPUT_VARIABLE DXC_OUTNAME
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        string(REPLACE "\\" "/" DXC_OUTNAME "${DXC_OUTNAME}")
+    endif()
+
     add_custom_command(OUTPUT ${OUTNAME}.dxil
-        COMMAND ${DXC} ${DXC_DXIL_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.dxil
+        COMMAND ${DXC} ${DXC_DXIL_OPTS} ${ARGN} "${DXC_FILENAME}" /Fo "${DXC_OUTNAME}"
         DEPENDS ${FILENAME})
     add_custom_command(OUTPUT ${OUTNAME}.dxil.c
         COMMAND file_to_c ${OUTNAME}.dxil ${TARGET_NAME}BlobDXIL ${OUTNAME}.dxil.c ${OUTNAME}.dxil.h
@@ -232,7 +280,13 @@ function(preprocess_shader TARGETOBJ SHADERNAME)
     set(OUTNAME "${CMAKE_BINARY_DIR}/${SHADERNAME}")
     cmake_path(GET SHADERNAME STEM TARGET_NAME)
     cmake_path(GET OUTNAME PARENT_PATH OUTPUT_DIR)
-    preprocess(${FILENAME} ${OUTNAME}.rw ${DXC_COMMON_OPTS})
+
+    set(PREPROCESS_COMMON_OPTS "${DXC_COMMON_OPTS}")
+    if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+        set(PREPROCESS_COMMON_OPTS "-I${PROJECT_SOURCE_DIR}/src")
+    endif()
+
+    preprocess(${FILENAME} ${OUTNAME}.rw ${PREPROCESS_COMMON_OPTS})
     add_custom_command(OUTPUT ${OUTNAME}.rw.c
         COMMAND file_to_c ${OUTNAME}.rw ${TARGET_NAME}Text ${OUTNAME}.rw.c ${OUTNAME}.rw.h
         DEPENDS ${OUTNAME}.rw file_to_c
@@ -461,10 +515,12 @@ if (WIN32)
         "${PROJECT_SOURCE_DIR}/src/contrib/imgui/backends/imgui_impl_win32.cpp"
     )
     target_link_libraries(rt64
-        delayimp.lib
-        D3D12
-        DXGI
-        Shcore.lib
+        delayimp
+        d3d12
+        dxgi
+        shcore
+        d3dcompiler
+        dwmapi
         ${PROJECT_SOURCE_DIR}/src/contrib/dxc/lib/x64/dxcompiler.lib)
 
     target_include_directories(rt64 PRIVATE ${zstd_SOURCE_DIR}/lib)

@@ -1,0 +1,67 @@
+<template name="config-menu__mods">
+    <head>
+    </head>
+    <body>
+        <form class="config__form" id="conf-mods__form">
+            <div class="config__hz-wrapper">
+                <div class="config__wrapper" style="padding: 0dp;">
+                    <div class="mods">
+                        <div class="mods__main">
+                            <div class="mods__list">
+                                <div class="mods__empty" data-if="packs.size == 0">
+                                    No texture packs found. Put .rtz files in the mods folder, then press Rescan.
+                                </div>
+                                <button
+                                    class="mod-entry"
+                                    data-attr-id="'mod_row_' + i"
+                                    data-for="pack, i : packs"
+                                    data-class-mod-selected="selected == i"
+                                    data-class-mod-off="!pack.enabled"
+                                    data-event-focus="mods__select(i)"
+                                    data-event-mouseover="mods__select(i)"
+                                    data-event-click="mods__select(i)"
+                                >
+                                    <img class="mod-entry__thumb" data-if="pack.thumb != ''" data-attr-src="pack.thumb" />
+                                    <div class="mod-entry__thumb" data-if="pack.thumb == ''" />
+                                    <div class="mod-entry__body">
+                                        <div class="mod-entry__name">{{pack.display_name}}</div>
+                                        <div class="mod-entry__desc">{{pack.short_description}}</div>
+                                    </div>
+                                    <div class="mod-entry__state" data-class-mod-on="pack.enabled">{{pack.enabled ? 'ON' : 'OFF'}}</div>
+                                </button>
+                            </div>
+                            <div class="mods__details">
+                                <div class="mods__body" data-if="selected &lt; 0">
+                                    Select a texture pack to see its details.
+                                </div>
+                                <div class="mods__header" data-if="selected &gt;= 0">
+                                    <img class="mods__preview" data-if="packs[selected].thumb != ''" data-attr-src="packs[selected].thumb" />
+                                    <div class="mods__preview" data-if="packs[selected].thumb == ''" />
+                                    <div class="mods__headtext">
+                                        <div class="mods__title">{{packs[selected].display_name}}</div>
+                                        <div>{{packs[selected].version}}</div>
+                                    </div>
+                                </div>
+                                <div class="mods__body" data-if="selected &gt;= 0">
+                                    <div class="mods__authors">{{packs[selected].authors}}</div>
+                                    <div>{{packs[selected].description}}</div>
+                                </div>
+                                <div class="mods__footer" data-if="selected &gt;= 0">
+                                    <div class="mods__togglewrap">
+                                        <button class="mods-toggle" id="mods_toggle_button" data-class-mods-toggle-on="packs[selected].enabled" data-event-click="mods__toggle(selected)"><div class="mods-toggle__knob"></div></button>
+                                        <div class="mods__status">{{packs[selected].enabled ? 'Enabled' : 'Disabled'}}</div>
+                                    </div>
+                                    <div class="mods__hint">Accept toggles the highlighted pack</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mods__bar">
+                            <button class="mods__button" id="mods_refresh_button" data-event-click="mods__refresh"><div>Rescan</div></button>
+                            <button class="mods__button" id="mods_folder_button" data-event-click="mods__open_folder"><div>Open Mods Folder</div></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </body>
+</template>

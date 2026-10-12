@@ -32,6 +32,7 @@
 
 #ifndef ROBIN_HOOD_H_INCLUDED
 #define ROBIN_HOOD_H_INCLUDED
+#include <cstdint>
 
 // see https://semver.org/
 #define ROBIN_HOOD_VERSION_MAJOR 3 // for incompatible API changes
@@ -99,7 +100,11 @@ static Counts& counts() {
 #define ROBIN_HOOD_UNUSED(identifier)
 
 // bitness
-#if SIZE_MAX == UINT32_MAX
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
+#    define ROBIN_HOOD_PRIVATE_DEFINITION_BITNESS() 64
+#elif defined(__i386__) || defined(_M_IX86) || defined(__arm__) || defined(_M_ARM)
+#    define ROBIN_HOOD_PRIVATE_DEFINITION_BITNESS() 32
+#elif SIZE_MAX == UINT32_MAX
 #    define ROBIN_HOOD_PRIVATE_DEFINITION_BITNESS() 32
 #elif SIZE_MAX == UINT64_MAX
 #    define ROBIN_HOOD_PRIVATE_DEFINITION_BITNESS() 64

@@ -1546,6 +1546,10 @@ namespace RT64 {
             D3D12Texture *interfaceTexture = static_cast<D3D12Texture *>(textureBarrier.texture);
             D3D12_RESOURCE_STATES stateBefore = interfaceTexture->resourceStates;
             D3D12_RESOURCE_STATES stateAfter = toTextureState(stages, textureBarrier.layout, interfaceTexture->desc.flags);
+            // Copy queues require resources to stay in COMMON (implicit promotion to COPY_DEST).
+            if ((d3d->GetType() == D3D12_COMMAND_LIST_TYPE_COPY) && (stateAfter == D3D12_RESOURCE_STATE_COPY_DEST)) {
+                stateAfter = D3D12_RESOURCE_STATE_COMMON;
+            }
             bool madeBarrier = makeBarrier(interfaceTexture->d3d, stateBefore, stateAfter, interfaceTexture->desc.flags & RenderTextureFlag::UNORDERED_ACCESS, resourceBarrier);
             interfaceTexture->resourceStates = stateAfter;
             interfaceTexture->layout = textureBarrier.layout;
@@ -3299,6 +3303,7 @@ namespace RT64 {
                 D3D12_MESSAGE_ID_DRAW_EMPTY_SCISSOR_RECTANGLE,
                 D3D12_MESSAGE_ID_HEAP_ADDRESS_RANGE_INTERSECTS_MULTIPLE_BUFFERS,
                 D3D12_MESSAGE_ID_CREATEGRAPHICSPIPELINESTATE_RENDERTARGETVIEW_NOT_SET,
+                (D3D12_MESSAGE_ID)1424, // FENCE_ZERO_WAIT
 #           ifdef D3D12_DEBUG_LAYER_SUPRESS_SAMPLE_POSITIONS_ERROR
                 D3D12_MESSAGE_ID_SAMPLEPOSITIONS_MISMATCH_RECORDTIME_ASSUMEDFROMCLEAR,
                 D3D12_MESSAGE_ID_SAMPLEPOSITIONS_MISMATCH_DEFERRED,

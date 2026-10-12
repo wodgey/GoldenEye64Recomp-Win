@@ -70,6 +70,22 @@ namespace zelda64 {
     CameraInvertMode get_analog_camera_invert_mode();
     void set_analog_camera_invert_mode(CameraInvertMode mode);
 
+    enum class DualControllerCompatibilityMode { Off, On, OptionCount };
+    NLOHMANN_JSON_SERIALIZE_ENUM(zelda64::DualControllerCompatibilityMode, {
+        {zelda64::DualControllerCompatibilityMode::Off, "Off"},
+        {zelda64::DualControllerCompatibilityMode::On, "On"}
+    });
+    enum class ShowFpsMode { Off, On, OptionCount };
+    NLOHMANN_JSON_SERIALIZE_ENUM(zelda64::ShowFpsMode, {
+        {zelda64::ShowFpsMode::Off, "Off"},
+        {zelda64::ShowFpsMode::On, "On"}
+    });
+
+    DualControllerCompatibilityMode get_dual_controller_compatibility_mode();
+    void set_dual_controller_compatibility_mode(DualControllerCompatibilityMode mode);
+    ShowFpsMode get_show_fps_mode();
+    void set_show_fps_mode(ShowFpsMode mode);
+
     enum class AnalogCamMode {
         On,
         Off,

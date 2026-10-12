@@ -553,7 +553,7 @@ bool process_instruction(size_t instr_index, const std::vector<rabbitizer::Instr
                 break;
             }
         default:
-            fmt::print(stderr, "Unhandled instruction: {}\n", instr.getOpcodeName());
+            fmt::print(stderr, "Unhandled instruction: {} at 0x{:04X}\n", instr.getOpcodeName(), instr_vram);
             assert(false);
             return false;
         }

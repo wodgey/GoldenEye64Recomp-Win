@@ -10,7 +10,14 @@
 #include "RmlUi/Core.h"
 
 ultramodern::renderer::GraphicsConfig new_options;
+#include <RmlUi/Core/Elements/ElementTabSet.h>
+#include "SDL.h"
+#include "zelda_render.h"
+
 Rml::DataModelHandle nav_help_model_handle;
+Rml::DataModelHandle mods_model_handle;
+std::vector<zelda64::renderer::ModPackInfo> mods_rows;
+int mods_selected = -1;
 Rml::DataModelHandle general_model_handle;
 Rml::DataModelHandle controls_model_handle;
 Rml::DataModelHandle graphics_model_handle;
@@ -291,6 +298,8 @@ struct ControlOptionsContext {
     zelda64::CameraInvertMode camera_invert_mode;
 	zelda64::AnalogCamMode analog_cam_mode;
     zelda64::CameraInvertMode analog_camera_invert_mode;
+    zelda64::DualControllerCompatibilityMode dual_controller_compatibility_mode = zelda64::DualControllerCompatibilityMode::Off;
+    zelda64::ShowFpsMode show_fps_mode = zelda64::ShowFpsMode::Off;
 };
 
 ControlOptionsContext control_options_context;
@@ -405,10 +414,32 @@ zelda64::CameraInvertMode zelda64::get_analog_camera_invert_mode() {
 }
 
 void zelda64::set_analog_camera_invert_mode(zelda64::CameraInvertMode mode) {
-	control_options_context.analog_camera_invert_mode = mode;
-	if (general_model_handle) {
-		general_model_handle.DirtyVariable("analog_camera_invert_mode");
-	}
+  control_options_context.analog_camera_invert_mode = mode;
+  if (general_model_handle) {
+          general_model_handle.DirtyVariable("analog_camera_invert_mode");
+  }
+}
+
+zelda64::DualControllerCompatibilityMode zelda64::get_dual_controller_compatibility_mode() {
+    return control_options_context.dual_controller_compatibility_mode;
+}
+
+void zelda64::set_dual_controller_compatibility_mode(zelda64::DualControllerCompatibilityMode mode) {
+    control_options_context.dual_controller_compatibility_mode = mode;
+    if (general_model_handle) {
+        general_model_handle.DirtyVariable("dual_controller_compatibility_mode");
+    }
+}
+
+zelda64::ShowFpsMode zelda64::get_show_fps_mode() {
+    return control_options_context.show_fps_mode;
+}
+
+void zelda64::set_show_fps_mode(zelda64::ShowFpsMode mode) {
+    control_options_context.show_fps_mode = mode;
+    if (general_model_handle) {
+        general_model_handle.DirtyVariable("show_fps_counter");
+    }
 }
 
 struct SoundOptionsContext {
@@ -558,7 +589,93 @@ public:
 				if (!prompt_context.open && event.GetId() == Rml::EventId::Keydown) {
 					auto key = event.GetParameter<Rml::Input::KeyIdentifier>("key_identifier", Rml::Input::KeyIdentifier::KI_UNKNOWN);
 					switch (key) {
-						case Rml::Input::KeyIdentifier::KI_ESCAPE:
+						case Rml::Input::KeyIdentifier::KI_PRIOR:
+                                                case Rml::Input::KeyIdentifier::KI_NEXT: {
+                                                        // LB / RB (mapped to Page Up / Page Down) switch settings tabs.
+                                                        const int dir = (key == Rml::Input::KeyIdentifier::KI_NEXT) ? 1 : -1;
+                                                        Rml::Element* target = event.GetTargetElement();
+                                                        Rml::ElementDocument* doc = (target != nullptr) ? target->GetOwnerDocument() : nullptr;
+                                                        Rml::ElementTabSet* tabset = (doc != nullptr) ? rmlui_dynamic_cast<Rml::ElementTabSet*>(doc->GetElementById("config_tabset")) : nullptr;
+                                                        if (tabset != nullptr) {
+                                                                Rml::ElementList tabs;
+                                                                doc->GetElementsByTagName(tabs, "tab");
+                                                                const int count = (int)tabs.size();
+                                                                const int cur = tabset->GetActiveTab();
+                                                                for (int step = 1; step < count; step++) {
+                                                                        const int idx = (((cur + dir * step) % count) + count) % count;
+                                                                        if (tabs[idx]->IsVisible()) {
+                                                                                tabset->SetActiveTab(idx);
+                                                                                break;
+                                                                        }
+                                                                }
+                                                        }
+                                                        break;
+                                                }
+                                                case Rml::Input::KeyIdentifier::KI_UP:
+                                                case Rml::Input::KeyIdentifier::KI_DOWN:
+                                                case Rml::Input::KeyIdentifier::KI_LEFT:
+                                                case Rml::Input::KeyIdentifier::KI_RIGHT: {
+                                                        // Mods tab: explicit directional focus (rows found by class, not id).
+                                                        Rml::Element* t = event.GetTargetElement();
+                                                        Rml::ElementDocument* doc = (t != nullptr) ? t->GetOwnerDocument() : nullptr;
+                                                        if (doc == nullptr) break;
+                                                        Rml::ElementTabSet* ts = rmlui_dynamic_cast<Rml::ElementTabSet*>(doc->GetElementById("config_tabset"));
+                                                        if (ts == nullptr) break;
+                                                        Rml::ElementList all_tabs;
+                                                        doc->GetElementsByTagName(all_tabs, "tab");
+                                                        const int cur_tab = ts->GetActiveTab();
+                                                        if (cur_tab < 0 || cur_tab >= (int)all_tabs.size() || all_tabs[cur_tab]->GetId() != "tab_mods") break;
+                                                        Rml::ElementList rows;
+                                                        doc->GetElementsByClassName(rows, "mod-entry");
+                                                        const int n_rows = (int)rows.size();
+                                                        int row_idx = -1;
+                                                        for (int i = 0; i < n_rows; i++) { if (rows[i] == t) row_idx = i; }
+                                                        const int sel = (mods_selected >= 0 && mods_selected < n_rows) ? mods_selected : 0;
+                                                        Rml::Element* sel_el = (n_rows > 0) ? rows[sel] : nullptr;
+                                                        Rml::Element* toggle = doc->GetElementById("mods_toggle_button");
+                                                        Rml::Element* refresh = doc->GetElementById("mods_refresh_button");
+                                                        Rml::Element* folder = doc->GetElementById("mods_folder_button");
+                                                        Rml::Element* mods_tab = doc->GetElementById("tab_mods");
+                                                        const bool up = key == Rml::Input::KeyIdentifier::KI_UP;
+                                                        const bool down = key == Rml::Input::KeyIdentifier::KI_DOWN;
+                                                        const bool left = key == Rml::Input::KeyIdentifier::KI_LEFT;
+                                                        const bool right = key == Rml::Input::KeyIdentifier::KI_RIGHT;
+                                                        const Rml::String tid = t->GetId();
+                                                        Rml::Element* dest = nullptr;
+                                                        bool handled = false;
+                                                        if (tid.rfind("tab_", 0) == 0) {
+                                                                if (down) { handled = true; dest = sel_el ? sel_el : refresh; }
+                                                        }
+                                                        else if (row_idx >= 0) {
+                                                                handled = true;
+                                                                if (up) dest = (row_idx > 0) ? rows[row_idx - 1] : mods_tab;
+                                                                else if (down) dest = (row_idx + 1 < n_rows) ? rows[row_idx + 1] : refresh;
+                                                                else if (right) dest = toggle;
+                                                        }
+                                                        else if (t == toggle) {
+                                                                handled = true;
+                                                                if (up || left) dest = sel_el;
+                                                                else if (down) dest = refresh;
+                                                        }
+                                                        else if (t == refresh) {
+                                                                handled = true;
+                                                                if (up) dest = toggle ? toggle : mods_tab;
+                                                                else if (right) dest = folder;
+                                                        }
+                                                        else if (t == folder) {
+                                                                handled = true;
+                                                                if (up) dest = toggle ? toggle : mods_tab;
+                                                                else if (left) dest = refresh;
+                                                        }
+                                                        bool focused_ok = false;
+                                                        if (handled) {
+                                                                if (dest != nullptr) { dest->Focus(true); focused_ok = (doc->GetFocusLeafNode() == dest); }
+                                                                event.StopPropagation();
+                                                        }
+                                                        { FILE* lf = fopen("C:\\Temp\\ge-nav.log", "a"); if (lf) { fprintf(lf, "key=%d target=%s row_idx=%d n_rows=%d handled=%d dest=%s focused_ok=%d\n", (int)key, tid.c_str(), row_idx, n_rows, (int)handled, dest ? "yes" : "null", (int)focused_ok); fclose(lf); } }
+                                                        break;
+                                                }
+                                                case Rml::Input::KeyIdentifier::KI_ESCAPE:
 							close_config_menu();
 							break;
 						case Rml::Input::KeyIdentifier::KI_F:
@@ -582,8 +699,7 @@ public:
 
 		recompui::register_event(listener, "open_quit_game_prompt",
 			[](const std::string& param, Rml::Event& event) {
-                // zelda64::open_quit_game_prompt();
-				ultramodern::quit(); // @SuperMario64Recomp
+                zelda64::open_quit_game_prompt();
 			});
 
 		recompui::register_event(listener, "toggle_input_device",
@@ -665,6 +781,7 @@ public:
 		bind_option(constructor, "ar_option", &new_options.ar_option);
 		bind_option(constructor, "hr_option", &new_options.hr_option);
 		bind_option(constructor, "msaa_option", &new_options.msaa_option);
+            bind_option(constructor, "api_option", &new_options.api_option);
 		bind_option(constructor, "rr_option", &new_options.rr_option);
 		constructor.BindFunc("rr_manual_value",
 			[](Rml::Variant& out) {
@@ -965,6 +1082,8 @@ public:
 		bind_option(constructor, "camera_invert_mode", &control_options_context.camera_invert_mode);
 		bind_option(constructor, "analog_cam_mode", &control_options_context.analog_cam_mode);
 		bind_option(constructor, "analog_camera_invert_mode", &control_options_context.analog_camera_invert_mode);
+		bind_option(constructor, "dual_controller_compatibility_mode", &control_options_context.dual_controller_compatibility_mode);
+                bind_option(constructor, "show_fps_counter", &control_options_context.show_fps_mode);
 
 		general_model_handle = constructor.GetModelHandle();
 	}
@@ -1017,7 +1136,80 @@ public:
 		debug_context.model_handle = constructor.GetModelHandle();
 	}
 
-	void make_prompt_bindings(Rml::Context* context) {
+	void make_mods_bindings(Rml::Context* context) {
+                Rml::DataModelConstructor constructor = context->CreateDataModel("mods_model");
+                if (!constructor) {
+                        throw std::runtime_error("Failed to make RmlUi data model for the mods menu");
+                }
+
+                if (auto row = constructor.RegisterStruct<zelda64::renderer::ModPackInfo>()) {
+                        row.RegisterMember("mod_id", &zelda64::renderer::ModPackInfo::mod_id);
+                        row.RegisterMember("display_name", &zelda64::renderer::ModPackInfo::display_name);
+                        row.RegisterMember("short_description", &zelda64::renderer::ModPackInfo::short_description);
+                        row.RegisterMember("description", &zelda64::renderer::ModPackInfo::description);
+                        row.RegisterMember("version", &zelda64::renderer::ModPackInfo::version);
+                        row.RegisterMember("authors", &zelda64::renderer::ModPackInfo::authors);
+                        row.RegisterMember("thumb", &zelda64::renderer::ModPackInfo::thumb);
+                        row.RegisterMember("enabled", &zelda64::renderer::ModPackInfo::enabled);
+                }
+                constructor.RegisterArray<std::vector<zelda64::renderer::ModPackInfo>>();
+
+                mods_rows = zelda64::renderer::get_texture_packs();
+                mods_selected = mods_rows.empty() ? -1 : 0;
+                constructor.Bind("packs", &mods_rows);
+                constructor.Bind("selected", &mods_selected);
+
+                constructor.BindEventCallback("mods__select",
+                        [](Rml::DataModelHandle handle, Rml::Event&, const Rml::VariantList& args) {
+                                if (args.empty()) {
+                                        return;
+                                }
+                                const int i = args[0].Get<int>();
+                                if (i >= 0 && i < (int)mods_rows.size() && i != mods_selected) {
+                                        mods_selected = i;
+                                        handle.DirtyVariable("selected");
+                                }
+                        });
+                constructor.BindEventCallback("mods__toggle",
+                        [](Rml::DataModelHandle handle, Rml::Event&, const Rml::VariantList& args) {
+                                if (args.empty()) {
+                                        return;
+                                }
+                                const int i = args[0].Get<int>();
+                                if (i < 0 || i >= (int)mods_rows.size()) {
+                                        return;
+                                }
+                                const bool now_enabled = !mods_rows[i].enabled;
+                                zelda64::renderer::set_texture_pack_enabled(mods_rows[i].mod_id, now_enabled);
+                                mods_rows[i].enabled = now_enabled;
+                                handle.DirtyVariable("packs");
+                        });
+                constructor.BindEventCallback("mods__refresh",
+                        [](Rml::DataModelHandle handle, Rml::Event&, const Rml::VariantList&) {
+                                zelda64::renderer::rescan_texture_packs();
+                                mods_rows = zelda64::renderer::get_texture_packs();
+                                if (mods_rows.empty()) {
+                                        mods_selected = -1;
+                                }
+                                else if (mods_selected < 0 || mods_selected >= (int)mods_rows.size()) {
+                                        mods_selected = 0;
+                                }
+                                handle.DirtyVariable("packs");
+                                handle.DirtyVariable("selected");
+                        });
+                constructor.BindEventCallback("mods__open_folder",
+                        [](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) {
+                                const std::filesystem::path mods_dir = zelda64::renderer::get_texture_pack_dir();
+                                std::error_code ec;
+                                std::filesystem::create_directories(mods_dir, ec);
+                                const std::string path = mods_dir.string();
+                                SDL_OpenURL(path.c_str());
+                        });
+
+                mods_model_handle = constructor.GetModelHandle();
+        }
+
+        void make_prompt_bindings(Rml::Context* context) {
 		Rml::DataModelConstructor constructor = context->CreateDataModel("prompt_model");
 		if (!constructor) {
 			throw std::runtime_error("Failed to make RmlUi data model for the prompt");
@@ -1044,6 +1236,7 @@ public:
 		make_graphics_bindings(context);
 		make_sound_options_bindings(context);
 		make_debug_bindings(context);
+           make_mods_bindings(context);
 		make_prompt_bindings(context);
 	}
 };

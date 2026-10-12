@@ -719,7 +719,7 @@ void recomp::start(
     const ultramodern::events::callbacks_t& events_callbacks,
     const ultramodern::error_handling::callbacks_t& error_handling_callbacks,
     const ultramodern::threads::callbacks_t& threads_callbacks
-) {
+                                             ) {
     project_version = version;
     recomp::check_all_stored_roms();
 

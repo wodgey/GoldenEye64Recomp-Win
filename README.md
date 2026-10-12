@@ -1,16 +1,30 @@
-# GoldenEye64Recomp
+# GoldenEye64Recomp-Win
 
-A native **macOS and Linux** port of **GoldenEye 007 (N64)**, built from the
-[100%-complete decompilation](https://gitlab.com/kholdfuzion/goldeneye_src) via static
-recompilation ([N64Recomp](https://github.com/N64Recomp/N64Recomp)) with the
-[RT64](https://github.com/rt64/rt64) renderer — Metal on macOS, Vulkan on Linux.
-Based on the [GoldenRecomp](https://github.com/kholdfuzion/goldenrecomp) project,
-which was previously Windows-only.
+A Windows-focused fork of [GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp), with native Windows builds, RT64 rendering, high-resolution texture-pack support, and some quality-of-life improvements.
 
-**This is not an emulator.** The game's original MIPS code is translated into C (or
-into machine code at launch, see below) and runs natively on your CPU — Apple
-Silicon, Intel, or x86-64 Linux. This is believed to be the first native macOS
-build of GoldenEye 007.
+**This is not an emulator.** The game's original MIPS code is translated into C and runs natively on your CPU.
+
+## About this fork
+
+This is my attempt at getting the macOS/Linux-oriented GoldenEye recompilation project running as a native Windows PC game.
+
+The motivation was simple: I wanted to play GoldenEye 007 with 4K high-resolution texture packs, similar to what has been possible with emulators. The first playable PC projects I tried used SDL2 rendering, but I knew that an RT64-based renderer would give me a better route towards the texture-pack support I wanted.
+
+With very little coding experience, and a lot of help from Claude, I gradually worked through the build problems and got the game running in a state I'm happy with. It involved plenty of missteps, workarounds and debugging along the way; hopefully documenting what I learned will save someone else some of the trouble.
+
+## Features and improvements
+
+- **Native Windows build**, developed with WSL for much of the source work, with the CMake configuration and compilation done natively on Windows (Visual Studio 2022, clang-cl).
+- **RT64 rendering** with Direct3D 12 and Vulkan. The Graphics tab has a Graphics API option (Auto, D3D12 or Vulkan) that takes effect on the next launch.
+- **High-resolution texture packs**: import `.rtz` packs and enable or disable them from the Mods tab.
+- **Dual-Stick controller support** (at the expense of local multiplayer): a workaround that lets a single modern gamepad use GoldenEye's twin-stick 2.x control styles.
+- **Classic GoldenEye control schemes**: the patch presents the gamepad to the game as two N64 controllers. One stick and its associated shoulder button go through port 0, the other stick through port 1, so the in-game Controls menu offers the original 2.1 to 2.4 schemes, including the left-handed ones. D-pad Up/Down crouch and zoom; D-pad Right/Left cycle weapons.
+- **FPS counter** (F9, or the QOL Settings tab) showing the active graphics backend, display FPS and the game's own frame rate.
+- **QOL Settings tab** in the launcher for the Dual-Stick and FPS counter options.
+
+The dual-stick implementation is admittedly a little hacky, but it works. It relies on the original game's support for multiple controllers and keeps its existing control-scheme options. Through the in-game Controls menu you can still swap which shoulder button is AIM or FIRE and which stick controls MOVE or LOOK.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list of changes against upstream.
 
 ## No Nintendo assets
 
@@ -25,11 +39,17 @@ your ROM.
 
 ## Requirements
 
-**Both platforms**
+**All platforms**
 
 - Your own GoldenEye 007 **NTSC-U** ROM dump, big-endian `.z64`,
   sha1 `abe01e4aeb033b6c0836819f549c791b26cfde83`
   (byteswapped `.v64` / `.n64` dumps are accepted and converted too)
+
+**Windows**
+
+- Windows 10/11 and Visual Studio 2022 with the C++ and LLVM/clang-cl components, plus CMake and Ninja
+- `xdelta3` (for example inside WSL) to turn your ROM into the TLBFREE ROM
+- A few third-party dependencies that are not stored in this repository (RT64's shader compiler and Windows dependency pack, and a prebuilt FreeType); see [docs/BUILDING_WINDOWS.md](docs/BUILDING_WINDOWS.md)
 
 **macOS**
 
@@ -45,7 +65,21 @@ your ROM.
 - `cmake ninja-build clang lld python3 libsdl2-dev libfreetype-dev libgtk-3-dev xdelta3`
   (Debian/Ubuntu names; the build script checks and tells you what's missing)
 
-## Build
+## Building on Windows
+
+Step-by-step instructions, including where each external dependency comes from, are in
+[docs/BUILDING_WINDOWS.md](docs/BUILDING_WINDOWS.md). In outline:
+
+1. Put your ROM in the project root as `baserom.u.z64` and create the TLBFREE ROM with
+   `xdelta3 -d -s baserom.u.z64 vanilla_to_tlbfree.xdelta ge007.tlbfree.z64`.
+2. Add the dependencies that are not in the repository (`dxc`, `mupen64plus-win32-deps`, FreeType).
+3. Build the native `N64Recomp.exe` from `n64recomp-src`.
+4. Open the project root in Visual Studio and build `GoldenRecomp`.
+
+No `ge007.tlbfree.elf` is needed. Developers who want to recompile from an ELF instead of the committed
+symbol data can generate one from their own ROM; see [docs/TLBFREE_ELF.md](docs/TLBFREE_ELF.md).
+
+## Build (macOS and Linux)
 
 There are two build modes. Both need your ROM; they differ in *when* the game
 code is generated.
@@ -104,8 +138,8 @@ or open **GoldenEye 007 Recompiled.app** on macOS.
 
 On first launch, pick your ROM in the picker — a plain retail NTSC-U dump works
 directly, and the app converts it for you. Settings and the stored ROM live in
-`~/Library/Application Support/GoldenRecomp` (macOS) or `~/.config/GoldenRecomp`
-(Linux); delete the stored `.z64` there if you ever want the ROM picker back.
+`%LOCALAPPDATA%\GoldenRecomp` (Windows), `~/Library/Application Support/GoldenRecomp` (macOS) or
+`~/.config/GoldenRecomp` (Linux); delete the stored `.z64` there if you ever want the ROM picker back.
 
 ## State
 
@@ -122,9 +156,13 @@ incomplete; some weapons fire too fast because the game runs at native 60Hz.
 symbol data here is generated against the US ROM. The decompilation supports EU,
 so PAL support is possible future work.
 
-## What was fixed to get here
+## Status and maintenance
 
-Beyond the macOS and Linux platform glue, this port surfaced and fixed a number
+This fork has reached a state where I'm happy with it for my own use. I don't currently intend to maintain it actively, unless significant progress upstream gives me a reason to revisit it. I will, however, try to keep the build notes accurate in case they help someone else.
+
+## What was fixed to get here (upstream)
+
+Beyond the macOS and Linux platform glue, the upstream port surfaced and fixed a number
 of bugs affecting all platforms. Drafted upstream reports live in
 `docs/upstream-issues/`.
 
@@ -168,11 +206,15 @@ of bugs affecting all platforms. Drafted upstream reports live in
 
 ## Credits
 
-- The [GoldenEye decompilation](https://gitlab.com/kholdfuzion/goldeneye_src) team — 100% as of 2026-08-17
-- [kholdfuzion](https://github.com/kholdfuzion)'s GoldenRecomp — the Windows recomp this port builds on
+This project stands on the shoulders of giants. See [CREDITS.md](CREDITS.md) for the full list. In short:
+
+- [cblock85/GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp) — the macOS/Linux port this fork is based on
+- The [GoldenEye decompilation](https://gitlab.com/kholdfuzion/goldeneye_src) team
+- [kholdfuzion](https://github.com/kholdfuzion)'s [GoldenRecomp](https://github.com/kholdfuzion/goldenrecomp) — the Windows recomp the port builds on
 - [Mr-Wiseguy](https://github.com/Mr-Wiseguy) — N64Recomp, N64ModernRuntime, and the recomp technique
 - [RT64](https://github.com/rt64/rt64) — the renderer
-- macOS/Linux port, bug fixes, live-recompilation mode, and in-app ROM conversion
+
+Claude also played a substantial role in helping me investigate build failures, work through code changes and develop the Windows-specific modifications.
 
 ## License
 

@@ -160,8 +160,7 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
             recompui::set_current_menu(recompui::Menu::Config);
         }
 
-        // zelda64::open_quit_game_prompt();
-        ultramodern::quit(); // @SuperMario64Recomp
+        zelda64::open_quit_game_prompt();
         recompui::activate_mouse();
         break;
     }
@@ -504,6 +503,18 @@ ultramodern::input::connected_device_info_t recomp::get_connected_device_info(in
             return ultramodern::input::connected_device_info_t {
                 .connected_device = ultramodern::input::Device::Controller,
                 .connected_pak = ultramodern::input::Pak::RumblePak,
+            };
+        case 1:
+            if (zelda64::get_dual_controller_compatibility_mode() !=
+                zelda64::DualControllerCompatibilityMode::On) {
+                return ultramodern::input::connected_device_info_t {
+                    .connected_device = ultramodern::input::Device::None,
+                    .connected_pak = ultramodern::input::Pak::None,
+                };
+            }
+            return ultramodern::input::connected_device_info_t {
+                .connected_device = ultramodern::input::Device::Controller,
+                .connected_pak = ultramodern::input::Pak::None,
             };
     }
 

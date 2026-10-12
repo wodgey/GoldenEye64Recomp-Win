@@ -1,3 +1,4 @@
+static const char* g_backend_name = "?";
 #include <memory>
 #include <cstring>
 
@@ -283,6 +284,7 @@ zelda64::renderer::RT64Context::RT64Context(uint8_t* rdram, ultramodern::rendere
     thread_id = window_handle.thread_id;
 #endif
     setup_result = map_setup_result(app->setup(thread_id));
+    g_backend_name = (app->chosenGraphicsAPI == RT64::UserConfiguration::GraphicsAPI::D3D12) ? "D3D12" : "Vulkan";
     if (setup_result != ultramodern::renderer::SetupResult::Success) {
         app = nullptr;
         return;
@@ -306,12 +308,50 @@ zelda64::renderer::RT64Context::RT64Context(uint8_t* rdram, ultramodern::rendere
     }
 
     high_precision_fb_enabled = app->shaderLibrary->usesHDR;
+
+    zelda64::renderer::init_texture_packs();
+}
+
+#include <atomic>
+#include "render/rt64_texture_cache.h"
+#include <atomic>
+
+static std::atomic<uint64_t> g_game_frame_count{0};
+uint64_t zelda_game_frame_count() { return g_game_frame_count.load(std::memory_order_relaxed); }
+const char* zelda_renderer_backend_name() { return g_backend_name; }
+
+namespace {
+    std::atomic_bool packs_dirty{ false };
+}
+
+void zelda64::renderer::mark_texture_packs_dirty() {
+    packs_dirty.store(true);
+}
+
+void zelda64::renderer::init_texture_packs() {
+    packs_dirty.store(true);
 }
 
 zelda64::renderer::RT64Context::~RT64Context() = default;
 
 void zelda64::renderer::RT64Context::send_dl(const OSTask* task) {
-    app->state->rsp->reset();
+    // Apply texture pack changes here: this is the thread that submits textures.
+    if (app->textureCache != nullptr && packs_dirty.exchange(false)) {
+        std::vector<std::filesystem::path> paths = zelda64::renderer::get_enabled_texture_pack_paths();
+        if (paths.empty()) {
+            app->textureCache->clearReplacementDirectories();
+        }
+        else {
+            std::vector<RT64::ReplacementDirectory> dirs;
+            for (const std::filesystem::path &p : paths) {
+                dirs.emplace_back(RT64::ReplacementDirectory(p));
+            }
+            app->textureCache->loadReplacementDirectories(dirs);
+        }
+    }
+
+    g_game_frame_count.fetch_add(1, std::memory_order_relaxed);
+        app->state->rsp->reset();
     app->interpreter->loadUCodeGBI(task->t.ucode & 0x3FFFFFF, task->t.ucode_data & 0x3FFFFFF, true);
     app->processDisplayLists(app->core.RDRAM, task->t.data_ptr & 0x3FFFFFF, 0, true);
 }

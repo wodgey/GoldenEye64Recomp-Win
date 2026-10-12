@@ -758,7 +758,7 @@ RECOMP_PATCH void bossMainloop(void) {
 
                                 while (1) {
                                     s32 unusedSprintf =
-                                        sprintf(taskGrabBuffer, "u64.taskgrab.%d.core", taskgrab_ramdump_num);
+                                        sprintf_recomp(taskGrabBuffer, "u64.taskgrab.%d.core", taskgrab_ramdump_num);
 
                                     if (indycommHostCheckFileExists(taskGrabBuffer, &taskGrabFileSize) != NULL) {
                                         taskgrab_ramdump_num++;

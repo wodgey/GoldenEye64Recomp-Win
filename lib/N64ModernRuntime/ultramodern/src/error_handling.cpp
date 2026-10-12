@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <cstdio>
 
 #include "ultramodern/error_handling.hpp"
@@ -24,6 +25,6 @@ void ultramodern::error_handling::quick_exit(const char* filename, int line, con
 #ifdef __APPLE__
     std::_Exit(exit_status);
 #else
-    std::quick_exit(exit_status);
+    std::_Exit(exit_status);
 #endif
 }

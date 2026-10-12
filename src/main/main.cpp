@@ -46,7 +46,7 @@ void exit_error(const char* str, Ts ...args) {
     // TODO pop up an error
     ((void)fprintf(stderr, str, args), ...);
     assert(false);
-    std::quick_exit(EXIT_FAILURE);
+    std::_Exit(EXIT_FAILURE);
 }
 
 ultramodern::gfx_callbacks_t::gfx_data_t create_gfx() {
@@ -340,6 +340,148 @@ namespace zelda64 {
     void register_rom_conversion(); // rom_conversion.cpp
 }
 
+#include "librecomp/mods.hpp"
+#include "zelda_render.h"
+#include <fstream>
+#include <algorithm>
+#include "contrib/stb/stb_image.h"
+
+// ---- Texture packs (.rtz) via librecomp's mod manager ----
+namespace {
+    constexpr const char *GE_MOD_GAME_ID = "ge007";
+
+    std::filesystem::path resolve_mod_file(const std::string &mod_id) {
+        std::filesystem::path p = recomp::mods::get_mod_filename(mod_id);
+        std::filesystem::path dir = recomp::mods::get_mods_directory();
+        std::vector<std::filesystem::path> candidates{ p, dir / p, dir / p.filename() };
+        std::error_code ec;
+        for (const std::filesystem::path &c : candidates) {
+            if (!c.empty() && std::filesystem::exists(c, ec)) {
+                return c;
+            }
+        }
+        return {};
+    }
+
+    std::string safe_stem(const std::string &name) {
+        std::string s = name;
+        for (char &c : s) {
+            if (!isalnum(static_cast<unsigned char>(c)) && c != '_' && c != '-') {
+                c = '_';
+            }
+        }
+        return s;
+    }
+
+    // Decodes a PNG, center-crops to a square, box-downscales to 128x128 and writes a 32-bit TGA
+    // (the only image format the UI renderer can load). Returns the TGA path, or "" on failure.
+    std::string make_thumbnail(const std::vector<char> &png, const std::string &stem) {
+        int w = 0, h = 0, comp = 0;
+        unsigned char *px = stbi_load_from_memory(reinterpret_cast<const unsigned char *>(png.data()), int(png.size()), &w, &h, &comp, 4);
+        if (px == nullptr || w <= 0 || h <= 0) {
+            return "";
+        }
+
+        constexpr int Out = 128;
+        const int side = std::min(w, h);
+        const int ox = (w - side) / 2;
+        const int oy = (h - side) / 2;
+        std::vector<uint8_t> tga(18 + Out * Out * 4, 0);
+        tga[2] = 2;
+        tga[12] = Out & 255; tga[13] = Out >> 8;
+        tga[14] = Out & 255; tga[15] = Out >> 8;
+        tga[16] = 32;
+        tga[17] = 8;
+        for (int y = 0; y < Out; y++) {
+            const int sy0 = oy + (y * side) / Out;
+            const int sy1 = std::max(sy0 + 1, oy + ((y + 1) * side) / Out);
+            const int row = Out - 1 - y; // TGA stores rows bottom-to-top
+            for (int x = 0; x < Out; x++) {
+                const int sx0 = ox + (x * side) / Out;
+                const int sx1 = std::max(sx0 + 1, ox + ((x + 1) * side) / Out);
+                uint64_t r = 0, g = 0, b = 0, a = 0, n = 0;
+                for (int sy = sy0; sy < sy1; sy++) {
+                    for (int sx = sx0; sx < sx1; sx++) {
+                        const unsigned char *s = px + (size_t(sy) * w + sx) * 4;
+                        r += s[0]; g += s[1]; b += s[2]; a += s[3]; n++;
+                    }
+                }
+                uint8_t *d = &tga[18 + (size_t(row) * Out + x) * 4];
+                d[0] = uint8_t(b / n); d[1] = uint8_t(g / n); d[2] = uint8_t(r / n); d[3] = uint8_t(a / n);
+            }
+        }
+        stbi_image_free(px);
+
+        std::filesystem::path cache = recomp::mods::get_mods_directory().parent_path() / "mod_thumbs";
+        std::error_code ec;
+        std::filesystem::create_directories(cache, ec);
+        std::filesystem::path outPath = cache / (stem + ".tga");
+        std::ofstream f(outPath, std::ios::binary | std::ios::trunc);
+        f.write(reinterpret_cast<const char *>(tga.data()), std::streamsize(tga.size()));
+        return f ? outPath.generic_string() : "";
+    }
+
+    bool pack_is_enabled(const std::string &mod_id) {
+        return recomp::mods::is_mod_enabled(mod_id) || recomp::mods::is_mod_auto_enabled(mod_id);
+    }
+}
+
+std::vector<zelda64::renderer::ModPackInfo> zelda64::renderer::get_texture_packs() {
+    std::vector<ModPackInfo> out;
+    for (const recomp::mods::ModDetails &d : recomp::mods::get_all_mod_details(GE_MOD_GAME_ID)) {
+        // Only .rtz texture packs belong in this tab.
+        if (resolve_mod_file(d.mod_id).extension() != ".rtz") {
+            continue;
+        }
+        ModPackInfo info;
+        info.mod_id = d.mod_id;
+        info.display_name = d.display_name.empty() ? d.mod_id : d.display_name;
+        info.short_description = d.short_description;
+        info.description = d.description;
+        info.version = d.version.to_string();
+        std::string authors;
+        for (const std::string &a : d.authors) {
+            authors += (authors.empty() ? "" : ", ") + a;
+        }
+        info.authors = authors.empty() ? "" : ("Authors: " + authors);
+        info.enabled = pack_is_enabled(d.mod_id);
+        const std::vector<char> &thumb_bytes = recomp::mods::get_mod_thumbnail(d.mod_id);
+        if (!thumb_bytes.empty()) {
+            info.thumb = make_thumbnail(thumb_bytes, safe_stem(d.mod_id));
+        }
+        out.push_back(std::move(info));
+    }
+    return out;
+}
+
+void zelda64::renderer::set_texture_pack_enabled(const std::string &mod_id, bool enabled) {
+    recomp::mods::enable_mod(mod_id, enabled);
+    zelda64::renderer::mark_texture_packs_dirty();
+}
+
+void zelda64::renderer::rescan_texture_packs() {
+    recomp::mods::scan_mods();
+    zelda64::renderer::mark_texture_packs_dirty();
+}
+
+std::filesystem::path zelda64::renderer::get_texture_pack_dir() {
+    return recomp::mods::get_mods_directory();
+}
+
+std::vector<std::filesystem::path> zelda64::renderer::get_enabled_texture_pack_paths() {
+    std::vector<std::filesystem::path> out;
+    for (const recomp::mods::ModDetails &d : recomp::mods::get_all_mod_details(GE_MOD_GAME_ID)) {
+        if (!pack_is_enabled(d.mod_id)) {
+            continue;
+        }
+        std::filesystem::path file = resolve_mod_file(d.mod_id);
+        if (file.extension() == ".rtz") {
+            out.push_back(file);
+        }
+    }
+    return out;
+}
+
 // array of supported GameEntry objects
 std::vector<recomp::GameEntry> supported_games = {
     {
@@ -606,9 +748,32 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Failed to load controller mappings: %s\n", SDL_GetError());
     }
 
+    // Mods are matched to the game by this ID (mod.json "game_id").
+    for (auto &g : supported_games) {
+        g.mod_game_id = "ge007";
+    }
+
     // Register supported games and patches
     for (const auto& game : supported_games) {
         recomp::register_game(game);
+    }
+
+    // Texture packs (.rtz, marked by rt64.json) are mods that can be toggled while playing.
+    {
+        recomp::mods::ModContentType texture_pack_content{};
+        texture_pack_content.content_filename = "rt64.json";
+        texture_pack_content.allow_runtime_toggle = true;
+        texture_pack_content.on_enabled = [](recomp::mods::ModContext&, const recomp::mods::ModHandle&) {
+            zelda64::renderer::mark_texture_packs_dirty();
+        };
+        texture_pack_content.on_disabled = [](recomp::mods::ModContext&, const recomp::mods::ModHandle&) {
+            zelda64::renderer::mark_texture_packs_dirty();
+        };
+        texture_pack_content.on_reordered = [](recomp::mods::ModContext&) {
+            zelda64::renderer::mark_texture_packs_dirty();
+        };
+        const recomp::mods::ModContentTypeId texture_pack_type = recomp::mods::register_mod_content_type(texture_pack_content);
+        recomp::mods::register_mod_container_type("rtz", { texture_pack_type }, false);
     }
 
     // Allow selecting an unconverted retail NTSC-U ROM (converted in-app).

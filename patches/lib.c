@@ -61,3 +61,10 @@ u64 __fixunssfdi(f32 value) {
 
     return int_part;
 }
+
+// Dual-Stick: tell the host that gameplay input is being processed (lets menus keep a normal left stick).
+RECOMP_PATCH int cur_player_get_control_type(void) {
+    int style = g_CurrentPlayer->cur_player_control_type_0;
+    recomp_dual_stick_gameplay_tick(style);
+    return style;
+}
