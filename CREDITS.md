@@ -7,7 +7,7 @@ This is a Windows-focused fork. Almost everything in it is other people's work.
 | Project | Role |
 |---|---|
 | [cblock85/GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp) | The macOS/Linux GoldenEye recompilation this fork is based on |
-| GoldenRecomp | The earlier Windows-only GoldenEye recompilation that the macOS/Linux port was adapted from. The game patches in `patches/` (for example `workbench_theboy.c`) are credited to @theboy181 |
+| [GoldenRecomp](https://github.com/kholdfuzion/goldenrecomp) (Kholdfuzion) | The earlier Windows-only GoldenEye recompilation that the macOS/Linux port was adapted from. The game patches in `patches/` (for example `workbench_theboy.c`) are credited to @theboy181 |
 | [n64decomp/007](https://github.com/n64decomp/007) | The GoldenEye 007 decompilation. `tools/tlbfree/` rebuilds the TLB-free ELF from it |
 | Kholdfuzion ([goldeneye_src](https://gitlab.com/kholdfuzion/goldeneye_src)) | The TLB-free, no-compression GoldenEye decomp work and the TLB-free ROM layout this port depends on |
 | [N64Recomp](https://github.com/N64Recomp/N64Recomp) and [N64ModernRuntime](https://github.com/N64Recomp/N64ModernRuntime) | Static recompiler and runtime (`lib/N64ModernRuntime`, `n64recomp-src`) |
