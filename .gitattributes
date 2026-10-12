@@ -1,0 +1,40 @@
+# Store LF in the repository; let Git convert on checkout per platform.
+* text=auto
+
+# Windows-only scripts keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.sln text eol=crlf
+
+# Shell scripts must be LF.
+*.sh text eol=lf
+
+# Binary files: never touch line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.tga binary
+*.dds binary
+*.otf binary
+*.ttf binary
+*.woff binary
+*.ogg binary
+*.wav binary
+*.mp3 binary
+*.rtz binary
+*.z64 binary
+*.n64 binary
+*.v64 binary
+*.elf binary
+*.xdelta binary
+*.gep1 binary
+*.bin binary
+*.dll binary
+*.lib binary
+*.exe binary
+*.a binary
+*.so binary
+*.zip binary
+*.7z binary
