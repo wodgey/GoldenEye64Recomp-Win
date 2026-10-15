@@ -60,11 +60,19 @@ namespace RT64 {
                 assert((shaderCache->shaderUber != nullptr) && "Ubershader should've been created by the time a new shader is submitted to the cache.");
                 const RenderPipelineLayout *uberPipelineLayout = shaderCache->shaderUber->pipelineLayout.get();
                 const RenderMultisampling multisampling = shaderCache->multisampling;
-                std::unique_ptr<RasterShader> newShader = std::make_unique<RasterShader>(shaderCache->device, shaderDesc, uberPipelineLayout, shaderCache->shaderFormat, multisampling, shaderCache->shaderCompiler.get(), &shaderCache->optimizerCacheSPIRV);
+                std::unique_ptr<RasterShader> newShader;
+                try {
+                    newShader = std::make_unique<RasterShader>(shaderCache->device, shaderDesc, uberPipelineLayout, shaderCache->shaderFormat, multisampling, shaderCache->shaderCompiler.get(), &shaderCache->optimizerCacheSPIRV);
+                }
+                catch (const std::exception &e) {
+                    fprintf(stderr, "RT64: specialised shader compile failed, ubershader will be used: %s\n", e.what());
+                }
 
                 {
                     const std::unique_lock<std::mutex> lock(shaderCache->GPUShadersMutex);
-                    shaderCache->GPUShaders[shaderDesc.hash()] = std::move(newShader);
+                    if (newShader) {
+                        shaderCache->GPUShaders[shaderDesc.hash()] = std::move(newShader);
+                    }
                 }
             }
         }
