@@ -4,6 +4,8 @@ A Windows-focused fork of [GoldenEye64Recomp](https://github.com/cblock85/Golden
 
 **This is not an emulator.** The game's original MIPS code is translated into C and runs natively on your CPU.
 
+**Status: working and playable.** The Windows `GoldenRecomp.exe` builds and runs (Direct3D 12 and Vulkan) with **both** a Windows toolchain (Visual Studio 2022, clang-cl) **and** a Linux toolchain (WSL, CMake, Ninja and MinGW-w64, cross-compiling to Windows). See [docs/BUILDING_WINDOWS.md](docs/BUILDING_WINDOWS.md) and [docs/BUILDING_LINUX_CROSS.md](docs/BUILDING_LINUX_CROSS.md). The Visual Studio route is the reference build; the Linux cross-build has had much less testing.
+
 ## About this fork
 
 This is my attempt at getting the macOS/Linux-oriented GoldenEye recompilation project running as a native Windows PC game.
@@ -14,7 +16,7 @@ With very little coding experience, and a lot of help from Claude, I gradually w
 
 ## Features and improvements
 
-- **Native Windows build**, developed with WSL for much of the source work, with the CMake configuration and compilation done natively on Windows (Visual Studio 2022, clang-cl).
+- **Native Windows build**, developed with WSL for much of the source work, with the CMake configuration and compilation done natively on Windows (Visual Studio 2022, clang-cl). The same Windows exe can also be cross-compiled from Linux with MinGW-w64; see [docs/BUILDING_LINUX_CROSS.md](docs/BUILDING_LINUX_CROSS.md).
 - **RT64 rendering** with Direct3D 12 and Vulkan. The Graphics tab has a Graphics API option (Auto, D3D12 or Vulkan) that takes effect on the next launch.
 - **High-resolution texture packs**: import `.rtz` packs and enable or disable them from the Mods tab.
 - **Dual-Stick controller support** (at the expense of local multiplayer): a workaround that lets a single modern gamepad use GoldenEye's twin-stick 2.x control styles.
