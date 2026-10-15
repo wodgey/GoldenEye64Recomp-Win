@@ -371,7 +371,7 @@ add_custom_command(OUTPUT
                        ${CMAKE_SOURCE_DIR}/RecompiledPatches/recomp_overlays.inl
                        ${CMAKE_SOURCE_DIR}/RecompiledPatches/funcs.h
                    # TODO: Look into why modifying patches requires two builds to take
-                   COMMAND ${CMAKE_SOURCE_DIR}/n64recomp-src/out/build/x64-Debug/N64Recomp.exe patches.toml
+                   COMMAND $<IF:$<BOOL:${CMAKE_HOST_WIN32}>,${CMAKE_SOURCE_DIR}/n64recomp-src/out/build/x64-Debug/N64Recomp.exe,${CMAKE_SOURCE_DIR}/n64recomp-src/build-linux/N64Recomp> patches.toml
                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                    DEPENDS ${CMAKE_SOURCE_DIR}/patches/patches.elf
 )
@@ -538,6 +538,9 @@ if (WIN32)
                 LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
                 LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
         )
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # MinGW: GUI subsystem (no console window) except in Debug, matching the MSVC branch above.
+        target_link_options(GoldenRecomp PRIVATE $<$<NOT:$<CONFIG:Debug>>:-mwindows>)
     endif()
 
     target_sources(GoldenRecomp PRIVATE ${CMAKE_SOURCE_DIR}/icons/app.rc)
@@ -655,7 +658,10 @@ set (DXC_CS_OPTS "${DXC_COMMON_OPTS}" "-E" "CSMain" "-T cs_6_0")
 set (DXC_GS_OPTS "${DXC_COMMON_OPTS}" "-E" "GSMain" "-T gs_6_0")
 set (DXC_RT_OPTS "${DXC_COMMON_OPTS}" "-D" "RT_SHADER" "-T" "lib_6_3" "-fspv-target-env=vulkan1.1spirv1.4" "-fspv-extension=SPV_KHR_ray_tracing" "-fspv-extension=SPV_EXT_descriptor_indexing")
 
-if (${WIN32})
+if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND EXISTS "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc-linux")
+    set (DXC "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/lib/x64" "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc-linux")
+    add_compile_definitions(NOMINMAX)
+elseif (WIN32)
     set (DXC "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc.exe")
     add_compile_definitions(NOMINMAX)
 else()

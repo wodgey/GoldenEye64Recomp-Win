@@ -39,11 +39,11 @@ function(preprocess INFILE OUTFILE OPTIONS)
     endif()
 endfunction()
 
-if (WIN32)
-    set (DXC "${PROJECT_SOURCE_DIR}/src/contrib/dxc/bin/x64/dxc.exe")
 if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-    file(TO_NATIVE_PATH "${DXC}" DXC)
-endif()
+    set (DXC "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/src/contrib/dxc/lib/x64" "${PROJECT_SOURCE_DIR}/src/contrib/dxc/bin/x64/dxc-linux")
+    add_compile_definitions(NOMINMAX)
+elseif (WIN32)
+    set (DXC "${PROJECT_SOURCE_DIR}/src/contrib/dxc/bin/x64/dxc.exe")
     add_compile_definitions(NOMINMAX)
 
     # Dependencies that must be next to the DLL.
@@ -98,7 +98,7 @@ set(ANDROID_ABI arm64-v8a)
 
 # For DXC
 set (DXC_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/src")
-if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND NOT EXISTS "${PROJECT_SOURCE_DIR}/src/contrib/dxc/bin/x64/dxc-linux")
     execute_process(
         COMMAND wslpath -w "${DXC_INCLUDE_DIR}"
         OUTPUT_VARIABLE DXC_INCLUDE_DIR
@@ -120,7 +120,7 @@ function(build_shader_spirv_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
     set(DXC_FILENAME "${FILENAME}")
     set(DXC_OUTNAME "${OUTNAME}.spv")
 
-    if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND NOT EXISTS "${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc-linux")
         execute_process(
             COMMAND wslpath -w "${FILENAME}"
             OUTPUT_VARIABLE DXC_FILENAME
@@ -149,7 +149,7 @@ function(build_shader_dxil_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
     set(DXC_FILENAME "${FILENAME}")
     set(DXC_OUTNAME "${OUTNAME}.dxil")
 
-    if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    if (WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND NOT EXISTS "${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc-linux")
         execute_process(
             COMMAND wslpath -w "${FILENAME}"
             OUTPUT_VARIABLE DXC_FILENAME
