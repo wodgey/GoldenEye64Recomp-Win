@@ -21,7 +21,7 @@ Follow `docs/TLBFREE_ELF.md` to produce `ge007.tlbfree.elf` and `ge007.tlbfree.z
 
 (`boost-1.81.0` inside the second folder is not needed.)
 
-**FreeType.** Download a prebuilt Windows FreeType 2.13.x release and unpack it so that `lib/freetype-windows-binaries/include` and `lib/freetype-windows-binaries/release static/vs2015-2022/win64/` exist. `CMakeLists.txt` reads the headers from there.
+**FreeType.** Download a prebuilt Windows FreeType 2.10.1 release and unpack it so that `lib/freetype-windows-binaries/include` and `lib/freetype-windows-binaries/release static/vs2015-2022/win64/` exist. `CMakeLists.txt` reads the headers from there.
 
 ## 3. Native N64Recomp
 
