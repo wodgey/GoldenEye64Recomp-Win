@@ -59,3 +59,7 @@ Two related points:
 ## Configure errors with newer CMake
 
 **`Compatibility with CMake < 3.5 has been removed` (from `lunasvg`) on CMake 4.x.** Add `-DCMAKE_POLICY_VERSION_MINIMUM=3.5` to the configure command. In PowerShell, quote it: `"-DCMAKE_POLICY_VERSION_MINIMUM=3.5"`. Unquoted, PowerShell splits the value at the decimal point and CMake reports an invalid value.
+
+## Configure errors with newer CMake
+
+**`Compatibility with CMake < 3.5 has been removed` (from `lunasvg`) on CMake 4.x.** Add `-DCMAKE_POLICY_VERSION_MINIMUM=3.5` to the configure command. In PowerShell, quote it: `"-DCMAKE_POLICY_VERSION_MINIMUM=3.5"`. Unquoted, PowerShell splits the value at the decimal point and CMake reports an invalid value.
