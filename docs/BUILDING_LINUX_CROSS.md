@@ -6,6 +6,8 @@ This is an alternative to the Visual Studio route in [BUILDING_WINDOWS.md](BUILD
 
 Tested once, by one person, on a clean clone in WSL (Kali). The cross-built Release exe loads into gameplay and runs at 60 FPS on both Vulkan and D3D12. Long sessions, every mission and audio on every backend have not been checked.
 
+**Not yet verified:** that a fresh clone of this repository builds and runs by following only this guide. The steps were worked out in one long session and then written up, so a missed prerequisite is possible. If you hit one, please open an issue. This port was developed with Claude's help (see the README), and pasting an error together with this guide into Claude will probably get you unstuck.
+
 Do not upload or commit the ROM or the ELF. Do not distribute the built `.exe`: it embeds code translated from the game.
 
 ## 1. Host tools versus target tools
