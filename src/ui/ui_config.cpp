@@ -565,8 +565,11 @@ void recompui::update_rml_display_refresh_rate() {
 	lastRate = curRate;
 }
 
-DebugContext debug_context;
-
+static DebugContext& get_debug_context() {
+    static DebugContext ctx;     // built the first time it is used, after all globals exist
+    return ctx;
+}
+#define debug_context (get_debug_context())
 class ConfigMenu : public recompui::MenuController {
 public:
 	ConfigMenu() {

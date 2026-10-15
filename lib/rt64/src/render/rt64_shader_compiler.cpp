@@ -30,13 +30,21 @@ namespace RT64 {
     // ShaderCompiler
 
     ShaderCompiler::ShaderCompiler() {
+        #ifdef __MINGW32__
+        HRESULT res = DxcCreateInstance(CLSID_DxcCompiler, IID_IDxcCompiler_RT64, (void **)(&dxcCompiler));
+#else
         HRESULT res = DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler), (void **)(&dxcCompiler));
+#endif
         if (FAILED(res)) {
             fprintf(stderr, "DxcCreateInstance(DxcCompiler) failed with error code 0x%lX.\n", res);
             return;
         }
 
+        #ifdef __MINGW32__
+        res = DxcCreateInstance(CLSID_DxcUtils, IID_IDxcUtils_RT64, (void **)(&dxcUtils));
+#else
         res = DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), (void **)(&dxcUtils));
+#endif
         if (FAILED(res)) {
             fprintf(stderr, "DxcCreateInstance(DxcUtils) failed with error code 0x%lX.\n", res);
             return;
@@ -119,7 +127,11 @@ namespace RT64 {
         const wchar_t **libraryBlobNames, uint32_t libraryBlobCount, IDxcBlob **shaderBlob) const 
     {
         IDxcLinker *dxcLinker = nullptr;
+        #ifdef __MINGW32__
+        HRESULT res = DxcCreateInstance(CLSID_DxcLinker, IID_IDxcLinker_RT64, (void **)(&dxcLinker));
+#else
         HRESULT res = DxcCreateInstance(CLSID_DxcLinker, __uuidof(IDxcLinker), (void **)(&dxcLinker));
+#endif
         if (FAILED(res)) {
             fprintf(stderr, "DxcCreateInstance(DxcLinker) failed with error code 0x%lX.\n", res);
             return;
