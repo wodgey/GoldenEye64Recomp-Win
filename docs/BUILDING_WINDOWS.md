@@ -55,3 +55,7 @@ Two related points:
 
 - The `N64Recomp` binary built under WSL is a Linux ELF and cannot run on Windows. Build `N64Recomp.exe` natively from `n64recomp-src` (step 3).
 - A convenient workflow is to edit files from WSL (the repo is reachable at `/mnt/c/Users/.../GoldenEye64Recomp`) and run the CMake build from Windows.
+
+## Configure errors with newer CMake
+
+**`Compatibility with CMake < 3.5 has been removed` (from `lunasvg`) on CMake 4.x.** Add `-DCMAKE_POLICY_VERSION_MINIMUM=3.5` to the configure command. In PowerShell, quote it: `"-DCMAKE_POLICY_VERSION_MINIMUM=3.5"`. Unquoted, PowerShell splits the value at the decimal point and CMake reports an invalid value.
